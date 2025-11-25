@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Storage</title>
+    <link rel="icon" type="image/png" href="/static/wonder-journey-logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="p-4 border-b border-gray-800">
+        <div class="max-w-full mx-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="/static/wonder-journey-logo.png" alt="Wonder Journey Logo" class="h-20 w-20 object-contain" />
+                    <div>
+                        <h1 class="text-2xl font-bold accent-cyan mb-1">
+                            Prompt Storage
+                        </h1>
+                        <p class="text-gray-400 text-xs">Wonder Journey プロンプト保管庫</p>
+                    </div>
+                </div>
+                <button onclick="openNewPromptModal()" class="btn-primary">
+                    <i class="fas fa-plus mr-2"></i>
+                    新規プロンプト
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex h-[calc(100vh-100px)]">
+        <!-- Sidebar -->
+        <aside class="sidebar w-64 overflow-y-auto">
+            <div class="p-6">
+                <div id="categoryList">
+                    <!-- Categories will be loaded here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Area -->
+        <main class="flex-1 overflow-y-auto p-8">
+            <!-- Search Bars -->
+            <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input
+                        type="text"
+                        id="keywordSearch"
+                        placeholder="キーワードで検索..."
+                        oninput="handleSearch()"
+                        class="search-input"
+                    />
+                </div>
+                <div class="search-box">
+                    <i class="fas fa-tag search-icon"></i>
+                    <input
+                        type="text"
+                        id="tagSearch"
+                        placeholder="タグで検索..."
+                        oninput="handleSearch()"
+                        class="search-input"
+                    />
+                </div>
+            </div>
+
+            <!-- Prompts Grid -->
+            <div id="promptsGrid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Prompts will be loaded here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-20 hidden">
+                <i class="fas fa-search text-6xl text-gray-600 mb-4"></i>
+                <p class="text-xl text-gray-400">一致するプロンプトが見つかりません。</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Prompt Detail Modal (Lightbox) -->
+    <div id="promptDetailModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold accent-cyan" id="detailTitle">プロンプト詳細</h2>
+                <button onclick="closeDetailModal()" class="text-gray-400 hover:text-white text-3xl transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Category and Date -->
+                <div class="flex justify-between items-center">
+                    <span class="text-sm bg-gray-700 px-4 py-2 rounded-full" id="detailCategory">
+                        <i class="fas fa-folder mr-2"></i>
+                    </span>
+                    <span class="text-xs text-gray-500" id="detailDate"></span>
+                </div>
+
+                <!-- Tags -->
+                <div id="detailTagsContainer" class="hidden">
+                    <h3 class="text-sm font-semibold text-gray-400 mb-2">タグ</h3>
+                    <div id="detailTags" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <!-- Image -->
+                <div id="detailImageContainer" class="hidden">
+                    <img id="detailImage" class="w-full max-h-96 object-cover rounded-lg" />
+                </div>
+
+                <!-- Prompt Content -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-sm font-semibold text-gray-400">プロンプト内容</h3>
+                        <button onclick="copyDetailPrompt()" class="btn-secondary text-sm">
+                            <i class="fas fa-copy mr-2"></i>
+                            コピー
+                        </button>
+                    </div>
+                    <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
+                        <pre id="detailPrompt" class="text-gray-200 whitespace-pre-wrap font-mono text-sm leading-relaxed"></pre>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 pt-4 border-t border-gray-700">
+                    <button onclick="editPromptFromDetail()" class="btn-secondary flex-1">
+                        <i class="fas fa-edit mr-2"></i>
+                        編集
+                    </button>
+                    <button onclick="deletePromptFromDetail()" class="btn-delete flex-1">
+                        <i class="fas fa-trash mr-2"></i>
+                        削除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Modal -->
+    <div id="promptModal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold accent-cyan" id="modalTitle">新規プロンプト</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="promptForm" onsubmit="handleSubmit(event)">
+                <input type="hidden" id="promptId" />
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">タイトル <span class="text-red-500">*</span></label>
+                        <input type="text" id="title" required placeholder="プロンプトのタイトルを入力" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">プロンプト <span class="text-red-500">*</span></label>
+                        <textarea id="prompt" required rows="8" placeholder="プロンプトの内容を入力"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">カテゴリー <span class="text-red-500">*</span></label>
+                        <select id="category" required>
+                            <option value="">カテゴリーを選択してください</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">タグ</label>
+                        <div id="tagInputContainer" class="tag-input-container">
+                            <input
+                                type="text"
+                                id="tagInput"
+                                class="tag-input-field"
+                                placeholder="タグを入力してEnter"
+                                onkeydown="handleTagInput(event)"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">画像URL（任意）</label>
+                        <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg" oninput="previewImage()" />
+                        <img id="imagePreview" class="preview-image hidden" />
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="btn-primary flex-1">
+                        <i class="fas fa-save mr-2"></i>
+                        保存
+                    </button>
+                    <button type="button" onclick="closeModal()" class="btn-secondary">
+                        キャンセル
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold accent-cyan" id="categoryModalTitle">新規カテゴリー</h2>
+                <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-white text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="categoryForm" onsubmit="handleCategorySubmit(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">カテゴリー名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="categoryName" required placeholder="カテゴリー名を入力" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">アイコン</label>
+                        <input type="hidden" id="categoryIcon" value="layer-group" />
+                        <div id="iconGrid" class="grid grid-cols-6 gap-2 p-3 bg-gray-800 rounded-lg border border-gray-700 max-h-64 overflow-y-auto">
+                            <!-- Icons will be populated by JavaScript -->
+                        </div>
+                        <div class="mt-2 text-sm text-gray-400">
+                            選択中: <i id="selectedIconPreview" class="fas fa-layer-group mr-2 text-cyan-400"></i>
+                            <span id="selectedIconName">レイヤー</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">カラー</label>
+                        <div class="flex gap-2">
+                            <input type="color" id="categoryColor" value="#4CD1E0" class="w-16 h-10 cursor-pointer" />
+                            <input type="text" id="categoryColorText" value="#4CD1E0" class="flex-1" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="btn-primary flex-1">
+                        <i class="fas fa-save mr-2"></i>
+                        保存
+                    </button>
+                    <button type="button" onclick="closeCategoryModal()" class="btn-secondary">
+                        キャンセル
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Sync color picker and text input
+        document.addEventListener('DOMContentLoaded', () => {
+            const colorPicker = document.getElementById('categoryColor')
+            const colorText = document.getElementById('categoryColorText')
+
+            if (colorPicker && colorText) {
+                colorPicker.addEventListener('input', (e) => {
+                    colorText.value = e.target.value
+                })
+            }
+        })
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

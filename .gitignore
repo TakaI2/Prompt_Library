@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist
+
+# Environment variables
+.env
+.env.local
+.dev.vars
+
+# Sensitive files
+*_URI.txt
+*_url.txt
+
+# Logs
+*.log
+
+# Backup files
+*.backup
+*.bak
+
+# Vercel
+.vercel
